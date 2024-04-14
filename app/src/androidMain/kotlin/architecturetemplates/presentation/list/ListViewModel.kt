@@ -1,7 +1,11 @@
-package com.vnteam.architecturetemplates.presentation.list
+package architecturetemplates.presentation.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+<<<<<<<< HEAD:shared/src/commonMain/kotlin/com/vnteam/architecturetemplates/presentation/list/ListViewModel.kt
+========
+import architecturetemplates.presentation.mappers.ForkUIMapper
+>>>>>>>> 8ed69786 (Implement ios module):app/src/androidMain/kotlin/architecturetemplates/presentation/list/ListViewModel.kt
 import com.vnteam.architecturetemplates.domain.models.Fork
 import com.vnteam.architecturetemplates.presentation.mappers.ForkUIMapper
 import com.vnteam.architecturetemplates.domain.usecase.ForkUseCase

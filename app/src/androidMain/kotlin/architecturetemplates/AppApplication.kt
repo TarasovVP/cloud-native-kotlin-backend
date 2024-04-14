@@ -1,7 +1,7 @@
-package com.vnteam.architecturetemplates
+package architecturetemplates
 
 import android.app.Application
-import com.vnteam.architecturetemplates.di_android.androidModule
+import architecturetemplates.di_android.androidModule
 import com.vnteam.architecturetemplates.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger

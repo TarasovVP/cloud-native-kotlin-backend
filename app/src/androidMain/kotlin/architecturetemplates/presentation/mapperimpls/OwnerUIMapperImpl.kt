@@ -1,8 +1,12 @@
-package com.vnteam.architecturetemplates.presentation.mapperimpls
+package architecturetemplates.presentation.mapperimpls
 
+<<<<<<<< HEAD:shared/src/commonMain/kotlin/com/vnteam/architecturetemplates/presentation/mapperimpls/OwnerUIMapperImpl.kt
 import presentation.mappers.OwnerUIMapper
+========
+import architecturetemplates.presentation.mappers.OwnerUIMapper
+>>>>>>>> 8ed69786 (Implement ios module):app/src/androidMain/kotlin/architecturetemplates/presentation/mapperimpls/OwnerUIMapperImpl.kt
 import com.vnteam.architecturetemplates.domain.models.Owner
-import com.vnteam.architecturetemplates.presentation.uimodels.OwnerUI
+import architecturetemplates.presentation.uimodels.OwnerUI
 
 class OwnerUIMapperImpl : OwnerUIMapper {
 
