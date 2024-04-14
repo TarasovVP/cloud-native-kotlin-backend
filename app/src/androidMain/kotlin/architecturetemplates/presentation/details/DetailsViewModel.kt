@@ -1,7 +1,11 @@
-package com.vnteam.architecturetemplates.presentation.details
+package architecturetemplates.presentation.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+<<<<<<<< HEAD:shared/src/commonMain/kotlin/com/vnteam/architecturetemplates/presentation/details/DetailsViewModel.kt
+========
+import architecturetemplates.presentation.mappers.ForkUIMapper
+>>>>>>>> 8ed69786 (Implement ios module):app/src/androidMain/kotlin/architecturetemplates/presentation/details/DetailsViewModel.kt
 import com.vnteam.architecturetemplates.domain.repositories.DBRepository
 import com.vnteam.architecturetemplates.presentation.mappers.ForkUIMapper
 import kotlinx.coroutines.flow.MutableStateFlow

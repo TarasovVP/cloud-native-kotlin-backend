@@ -1,4 +1,4 @@
-package com.vnteam.architecturetemplates.presentation.list
+package architecturetemplates.presentation.list
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +17,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+<<<<<<<< HEAD:shared/src/commonMain/kotlin/com/vnteam/architecturetemplates/presentation/list/ListScreen.kt
 import com.vnteam.architecturetemplates.presentation.uimodels.ForkUI
 import com.vnteam.architecturetemplates.resources.LocalLargePadding
 import com.vnteam.architecturetemplates.resources.LocalMediumPadding
 import com.vnteam.architecturetemplates.resources.getStringResources
 import org.koin.compose.koinInject
+========
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import architecturetemplates.presentation.navigation.NavigationScreen
+import org.koin.androidx.compose.koinViewModel
+>>>>>>>> 8ed69786 (Implement ios module):app/src/androidMain/kotlin/architecturetemplates/presentation/list/ListScreen.kt
 
 @Composable
 fun ListScreen(onItemClick: (Long) -> Unit) {
