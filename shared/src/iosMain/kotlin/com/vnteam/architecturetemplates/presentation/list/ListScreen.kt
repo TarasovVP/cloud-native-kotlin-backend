@@ -1,4 +1,4 @@
-package com.vnteam.architecturetemplates.list
+package com.vnteam.architecturetemplates.presentation.list
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +27,7 @@ import org.koin.compose.koinInject
 
 @Composable
 fun ListScreen() {
-    val navigator = LocalNavigator.currentOrThrow
+
     val viewModel: ListViewModel = koinInject()
     val platformMessageDisplayer: PlatformMessageDisplayer = koinInject()
     val viewState = viewModel.state.collectAsState()
@@ -37,6 +37,8 @@ fun ListScreen() {
             platformMessageDisplayer.showPopupMessage(message)
         }
     }
+
+    val navigator = LocalNavigator.currentOrThrow
     ListContent(viewState.value, { forkId ->
         navigator.push(NavigationScreen.DetailsContentScreen(forkId))
     }, {

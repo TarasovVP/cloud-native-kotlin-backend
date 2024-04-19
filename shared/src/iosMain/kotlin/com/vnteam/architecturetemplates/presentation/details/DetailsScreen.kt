@@ -1,4 +1,4 @@
-package com.vnteam.architecturetemplates.details
+package com.vnteam.architecturetemplates.presentation.details
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
