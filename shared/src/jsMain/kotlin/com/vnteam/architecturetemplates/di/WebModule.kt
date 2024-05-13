@@ -1,4 +1,4 @@
-package di
+package com.vnteam.architecturetemplates.di
 
 import com.vnteam.architecturetemplates.data.database.DatabaseDriverFactory
 import org.koin.dsl.module
