@@ -1,4 +1,4 @@
-package com.vnteam.architecturetemplates.presentation
+package com.vnteam.architecturetemplates.presentation.viewmodels
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -11,8 +11,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.vnteam.architecturetemplates.presentation.details.DetailsViewModel
-import com.vnteam.architecturetemplates.presentation.list.ListViewModel
 import org.koin.compose.koinInject
 
 import kotlin.reflect.KClass
