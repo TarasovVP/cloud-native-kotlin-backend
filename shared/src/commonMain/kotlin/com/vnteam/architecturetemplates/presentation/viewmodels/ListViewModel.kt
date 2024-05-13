@@ -1,10 +1,12 @@
-package com.vnteam.architecturetemplates.presentation.list
+package com.vnteam.architecturetemplates.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vnteam.architecturetemplates.domain.models.Fork
 import com.vnteam.architecturetemplates.presentation.mappers.ForkUIMapper
 import com.vnteam.architecturetemplates.domain.usecase.ForkUseCase
+import com.vnteam.architecturetemplates.presentation.intents.ListIntent
+import com.vnteam.architecturetemplates.presentation.states.ListViewState
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +37,6 @@ class ListViewModel(
             _state.value = state.value.copy(isLoading = true)
             val forks = forkUseCase.getForksFromApi()
             insertForksToDB(forks)
-            getForksFromDB()
         }
     }
 
@@ -45,6 +46,7 @@ class ListViewModel(
                 it ?: return@collect
                 forkUseCase.insertForksToDB(it)
             }
+            getForksFromDB()
         }
     }
 
