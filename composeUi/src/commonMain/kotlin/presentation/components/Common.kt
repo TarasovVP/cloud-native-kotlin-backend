@@ -72,7 +72,6 @@ import com.vnteam.architecturetemplates.presentation.resources.LocalStringResour
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import presentation.drawableRes
-import theme.Neutral400
 import theme.Neutral700
 import theme.Primary400
 import theme.Primary500

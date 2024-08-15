@@ -36,7 +36,6 @@ import presentation.components.avatarImage
 import presentation.components.HeaderText
 import presentation.components.PrimaryText
 import presentation.components.SecondaryText
-import presentation.shareLink
 import presentation.textWithNoDataHandling
 
 @Composable
@@ -72,7 +71,7 @@ fun DetailsContent(viewState: DetailsViewState) {
                 PrimaryText(viewState.fork?.description.textWithNoDataHandling())
             }
             Row(modifier = Modifier.padding(top = LocalMediumPadding.current.size).clickable {
-                shareLink(viewState.fork?.htmlUrl.orEmpty())
+                //shareLink(viewState.fork?.htmlUrl.orEmpty())
             }) {
                 SecondaryText(LocalStringResources.current.URL)
                 PrimaryText(viewState.fork?.htmlUrl.textWithNoDataHandling())
