@@ -1,3 +1,5 @@
+package presentation
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -38,13 +40,13 @@ import com.vnteam.architecturetemplates.presentation.resources.getStringResource
 import com.vnteam.architecturetemplates.presentation.states.screen.ScreenState
 import com.vnteam.architecturetemplates.presentation.states.screen.AppBarState
 import com.vnteam.architecturetemplates.presentation.viewmodels.AppViewModel
+import isMainScreen
 import kotlinx.browser.window
 import kotlinx.coroutines.delay
+import navigateToMain
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import presentation.components.SplashScreen
-import presentation.isMainScreen
-import presentation.navigateToMain
 import theme.AppTheme
 
 @Composable
@@ -127,7 +129,6 @@ fun AppBar(appViewModel: AppViewModel, appBarState: AppBarState) {
             .padding(horizontal = LocalDefaultPadding.current.size)
             .size(LocalLargeAvatarSize.current.size),
             onClick = {
-                println("webAppTAG AppBar mainIcon window.isMainScreen() ${window.isMainScreen()} pathname ${window.location.pathname}")
                 if (!window.isMainScreen()) window.navigateToMain()
             }) {
             Image(

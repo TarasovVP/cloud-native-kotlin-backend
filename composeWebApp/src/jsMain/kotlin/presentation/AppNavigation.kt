@@ -1,4 +1,9 @@
+package presentation
 
+import Constants.PATH_CREATE
+import Constants.PATH_DETAILS
+import Constants.PATH_EDIT
+import Constants.POP_STATE
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
@@ -7,12 +12,12 @@ import androidx.compose.runtime.remember
 import com.vnteam.architecturetemplates.presentation.resources.LocalStringResources
 import com.vnteam.architecturetemplates.presentation.states.screen.ScreenState
 import kotlinx.browser.window
+import navigateTo
+import navigateUp
 import org.w3c.dom.events.Event
 import presentation.create.CreateScreen
 import presentation.details.DetailsScreen
 import presentation.list.ListScreen
-import presentation.navigateTo
-import presentation.navigateUp
 import presentation.screens.create.CreateContent
 import presentation.screens.details.DetailsContent
 import presentation.screens.list.ListContent
@@ -20,42 +25,37 @@ import presentation.screens.list.ListContent
 @Composable
 fun AppNavigation(screenState: MutableState<ScreenState>) {
     val currentScreen = remember { mutableStateOf(window.location.pathname) }
-    println("webAppTAG Content currentScreen ${currentScreen.value}")
     DisposableEffect(Unit) {
         val onPopState: (Event) -> Unit = {
-            println("webAppTAG Content onPopState ${it.type}")
             currentScreen.value = window.location.pathname
-            println("webAppTAG Content onPopState ${it.type} currentScreen.value: ${currentScreen.value}")
         }
-        window.addEventListener("popstate", onPopState)
+        window.addEventListener(POP_STATE, onPopState)
 
         onDispose {
-            window.removeEventListener("popstate", onPopState)
+            window.removeEventListener(POP_STATE, onPopState)
         }
     }
-    println("webAppTAG Content  when  { currentScreen.value: ${currentScreen.value} screenState.value ${screenState.value}")
     when  {
-        currentScreen.value.startsWith("/details/") -> {
+        currentScreen.value.startsWith("/$PATH_DETAILS/") -> {
             screenState.value = screenState.value.copy(
                 floatingActionState = screenState.value.floatingActionState.copy(
                     floatingActionButtonVisible = true,
                     floatingActionButtonTitle = LocalStringResources.current.EDIT,
                     floatingActionButtonAction = {
-                        window.navigateTo("edit/${currentScreen.value.removePrefix("/details/")}")
+                        window.navigateTo("$PATH_EDIT/${currentScreen.value.removePrefix("/$PATH_DETAILS/")}")
                     }
                 )
             )
-            DetailsScreen(currentScreen.value.removePrefix("/details/"), screenState) { viewState ->
+            DetailsScreen(currentScreen.value.removePrefix("/$PATH_DETAILS/"), screenState) { viewState ->
                 screenState.value = screenState.value.copy(
                     appBarState = screenState.value.appBarState.copy(
                         appBarTitle = viewState.fork?.name.orEmpty()
                     )
                 )
-                println("webAppTAG AppNavigation viewState: $viewState")
                 DetailsContent(viewState)
             }
         }
-        currentScreen.value.startsWith("/edit/") -> {
+        currentScreen.value.startsWith("/$PATH_EDIT/") -> {
             screenState.value = screenState.value.copy(
                 appBarState = screenState.value.appBarState.copy(
                     appBarTitle = LocalStringResources.current.EDIT,
@@ -66,12 +66,11 @@ fun AppNavigation(screenState: MutableState<ScreenState>) {
                 floatingActionState = screenState.value.floatingActionState.copy(
                     floatingActionButtonVisible = false
                 ))
-            CreateScreen(currentScreen.value.removePrefix("/edit/"), screenState) { viewState, originFork, onClick ->
-                println("webAppTAG CommonTextField Content /edit/ originFork ${originFork.value}")
+            CreateScreen(currentScreen.value.removePrefix("/$PATH_EDIT/"), screenState) { viewState, originFork, onClick ->
                 CreateContent(viewState, originFork, onClick)
             }
         }
-        currentScreen.value.startsWith("/create/") -> {
+        currentScreen.value.startsWith("/$PATH_CREATE/") -> {
             screenState.value = screenState.value.copy(
                 appBarState = screenState.value.appBarState.copy(
                     appBarTitle = LocalStringResources.current.CREATE,
@@ -83,7 +82,6 @@ fun AppNavigation(screenState: MutableState<ScreenState>) {
                     floatingActionButtonVisible = false
                 ))
             CreateScreen("", screenState) { viewState, originFork, onClick ->
-                println("webAppTAG Content /create/ originFork ${originFork.value}")
                 CreateContent(viewState, originFork, onClick)
             }
         }
@@ -96,12 +94,12 @@ fun AppNavigation(screenState: MutableState<ScreenState>) {
                     floatingActionButtonVisible = true,
                     floatingActionButtonTitle = LocalStringResources.current.ADD,
                     floatingActionButtonAction = {
-                        window.navigateTo("create/")
+                        window.navigateTo("$PATH_CREATE/")
                     }
                 )
             )
             ListScreen(screenState, onItemClick = { forkUI ->
-                window.navigateTo("details/${forkUI.forkId}")
+                window.navigateTo("$PATH_DETAILS/${forkUI.forkId}")
             }, content = { viewState, onItemClick ->
                 ListContent(viewState.value, onItemClick)
             })
