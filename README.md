@@ -1,114 +1,183 @@
 # Cloud-Native Kotlin Backend
 
-A containerized REST backend built with Kotlin, Ktor and PostgreSQL, deployed to Google Cloud Run with Cloud SQL. The repository also contains Kotlin Multiplatform clients that share models with the server and use a local SQLDelight database as a cache.
+REST backend written in Kotlin with Ktor and PostgreSQL. The server is packaged as a Docker container and designed to run on Google Cloud Run with a Cloud SQL for PostgreSQL database.
 
-The project was originally developed in 2024 as the `kmp_with_server_implementation` branch of [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecure-Templates) and was extracted into this standalone repository in 2026.
+The project demonstrates backend development, layered server architecture, relational data persistence, dependency injection, containerization and deployment on Google Cloud.
 
-## Overview
+## Backend architecture
 
-- **Purpose:** show a full-stack Kotlin setup — multiplatform clients and a JVM server in one Gradle project, sharing a `core` module.
-- **Approach:** MVI clients (as in the KMP branch) plus a small layered server (routes → service → SQLDelight/PostgreSQL).
-- **Place in the evolution:** KMP → **KMP with server** → [multi-module KMP](https://github.com/TarasovVP/Android-Architecure-Templates/tree/kmp_with_multimodules_implementation).
+```text
+KMP / web / HTTP clients
+          │
+          │ JSON over HTTP
+          ▼
+Google Cloud Run
+┌─────────────────────────────────────────┐
+│ Ktor + Netty                            │
+│                                         │
+│ Routes                                  │
+│   └── DemoObjectService                 │
+│         └── SQLDelight queries          │
+│               └── HikariCP              │
+└───────────────────┬─────────────────────┘
+                    │ Cloud SQL Socket Factory / JDBC
+                    ▼
+          Cloud SQL for PostgreSQL
+```
 
-## Functionality
+The request flow is:
 
-Compared with the base scenario this branch has full CRUD over the server data:
+1. Ktor routes receive and deserialize HTTP requests.
+2. Response mappers convert JSON DTOs into domain models and back.
+3. `DemoObjectService` contains the application operations.
+4. SQLDelight generates type-safe PostgreSQL queries.
+5. HikariCP manages the JDBC connection pool.
+6. Koin creates and connects the server components.
 
-1. **List** — loads items from the server (`GET /demoObjects`), stores them in the local database and renders the stored list; items can be deleted (`DELETE /demoObjects/{id}`).
-2. **Details** — shows an item with its owner and avatar.
-3. **Create / edit** — a form screen that sends a new or changed item to the server (`POST /demoObjects`).
-4. **Settings** — dark theme and language (en / uk) stored in DataStore preferences; a text-to-speech helper is provided per platform.
+The database schema is created during application startup if it does not already exist.
 
-## Platforms
+## Backend module
 
-Android, iOS, Desktop (JVM), Web (Kotlin/JS) and a **JVM server**. As in the KMP branch there is no `wasmJs` target; the canvas-based web UI is a Kotlin/JS build using the Skiko WebAssembly runtime.
+```text
+server/
+├── Dockerfile
+├── build.gradle.kts
+└── src/main/
+    ├── kotlin/com/vnteam/architecturetemplates/
+    │   ├── Application.kt                 # Netty server and Ktor plugins
+    │   ├── Constants.kt                   # default server/database configuration
+    │   ├── http/Routes.kt                 # REST endpoints
+    │   ├── demo_object_service/            # service interface and implementation
+    │   ├── db/DatabaseDriverFactory.kt     # HikariCP and JDBC configuration
+    │   ├── di/SeverModule.kt               # Koin dependency graph
+    │   └── mapperimpls/                    # DTO/domain mapping
+    ├── sqldelight/.../ServerDatabase.sq   # PostgreSQL schema and queries
+    └── resources/logback.xml              # server logging
+```
 
-## Architecture
+The `core` module contains serializable DTOs and domain models shared by the server and its Kotlin Multiplatform clients. The remaining application modules are API consumers and examples; they are not part of the deployed backend process.
 
-| Module | Responsibility |
-|--------|----------------|
-| `core` | Multiplatform models (`DemoObject`, `Owner`), response DTOs and mapper contracts shared by clients **and** server |
-| `shared` | Client domain/data/presentation: use cases, Ktor `ApiService`, SQLDelight cache, preferences, ViewModels (intents, states), Koin modules, platform source sets |
-| `composeUi` | Compose Multiplatform screens and components reused by the app targets (list, details, create, theme) |
-| `composeApp` | Application entry points: Android, desktop, iOS framework, canvas web build |
-| `composeWebApp` | Web application using `composeUi` (with URL navigation) |
-| `webApp` | Compose HTML (DOM) web application |
-| `server` | Ktor + Netty server |
-| `iosApp` | SwiftUI host |
+## REST API
 
-### Server
+| Method | Endpoint | Purpose | Successful response |
+|---|---|---|---|
+| `POST` | `/demoObjects` | Insert or update a list of objects | `201 Created` |
+| `GET` | `/demoObjects` | Return all objects | `200 OK` with JSON array |
+| `GET` | `/demoObjects/{id}` | Return one object | `200 OK`, or `404 Not Found` |
+| `DELETE` | `/demoObjects/{id}` | Delete one object | `200 OK` |
 
-- **Framework:** Ktor server (Netty engine, ContentNegotiation with kotlinx.serialization JSON, CORS), DI with Koin.
-- **API:** `POST /demoObjects` (insert/upsert list), `GET /demoObjects`, `GET /demoObjects/{id}`, `DELETE /demoObjects/{id}`.
-- **Layers:** `http/Routes.kt` → `DemoObjectService` / `DemoObjectServiceImpl` → SQLDelight queries (`ServerDatabase.sq`, PostgreSQL dialect) → HikariCP pool.
-- **Database:** PostgreSQL, table `DemoObjectWithOwner` with `ON CONFLICT … DO UPDATE` upsert. The JDBC driver can be configured with environment variables (`JDBC_URL`, `DRIVER_CLASS_NAME`, `DB_USER_NAME`, `DB_USER_PASSWORD`); the defaults in `Constants.kt` are placeholders for a Google Cloud SQL instance.
-- **Packaging:** `fatJar` Gradle task and a `Dockerfile` that runs `ktor-server-1.0.0.jar` on port 8080 (`PORT` env variable is honoured). The server was deployed to Google Cloud Run (see the article below).
+`POST /demoObjects` performs an upsert: a row with the same `demoObjectId` is updated instead of duplicated.
 
-Clients read the server address from `shared/.../data/Constants.kt` (`LOCAL_HOST_URL`, `CLOUD_URL`); change it to your own deployment.
+Example request body:
+
+```json
+[
+  {
+    "demoObjectId": "sample-1",
+    "name": "Sample object",
+    "html_url": "https://example.com/sample-1",
+    "description": "Example API object",
+    "owner": {
+      "login": "demo-user",
+      "id": "42",
+      "avatar_url": "https://example.com/avatar.png",
+      "url": "https://example.com/users/demo-user"
+    }
+  }
+]
+```
 
 ## Technology stack
 
 | Area | Technology |
-|------|------------|
-| UI | Compose Multiplatform (Material 3), Compose HTML |
-| Networking | Ktor client (clients), Ktor server + Netty |
-| Image loading | Coil 3 (alpha) |
+|---|---|
+| Language | Kotlin 2.0.20, JVM 17 |
+| HTTP server | Ktor 2.3.12 with Netty |
 | Serialization | kotlinx.serialization |
-| Database | SQLDelight 2.0.2 — platform-specific drivers on clients (incl. sql.js web worker), PostgreSQL dialect + HikariCP on server |
-| Preferences | AndroidX DataStore |
-| Concurrency | Kotlin coroutines and `Flow` |
-| State management | MVI with `StateFlow` |
-| Navigation | JetBrains `navigation-compose`; route objects in `NavigationScreens` |
-| Dependency injection | Koin 4.0 (clients and server via `koin-ktor`) |
-| Logging (server) | Logback |
-| Testing | Template tests only (`ktor-server-tests` dependency is declared) |
-| Build | Gradle 8.7 (Kotlin DSL, version catalog), AGP 8.5.2, Kotlin 2.0.20 |
+| Dependency injection | Koin 4.0 |
+| Database | PostgreSQL 42.7.3 |
+| Queries and schema | SQLDelight 2.0.2, PostgreSQL dialect |
+| Connection pooling | HikariCP 5.0.1 |
+| Cloud database connection | Google Cloud SQL PostgreSQL Socket Factory |
+| Packaging | Gradle fat JAR and Docker |
+| Runtime | Google Cloud Run |
 
-## Project structure
+## Configuration
 
+The backend reads its runtime settings from environment variables:
+
+| Variable | Required | Description |
+|---|---|---|
+| `PORT` | No | HTTP port; defaults to `8080` |
+| `JDBC_URL` | Yes for a real deployment | PostgreSQL JDBC URL or Cloud SQL Socket Factory URL |
+| `DRIVER_CLASS_NAME` | No | Defaults to `org.postgresql.Driver` |
+| `DB_USER_NAME` | Yes | PostgreSQL user |
+| `DB_USER_PASSWORD` | Yes | PostgreSQL password |
+
+Do not commit real credentials. Configure production values as Cloud Run environment variables or secrets.
+
+Example local JDBC URL:
+
+```text
+jdbc:postgresql://localhost:5432/demo_objects
 ```
-core/         shared models + DTOs
-shared/       client logic (commonMain + android/ios/jvm/js/native)
-composeUi/    shared Compose screens
-composeApp/   android · desktop · ios · js entry points
-composeWebApp/ webApp/   web applications
-server/       Ktor server, SQLDelight schema, Dockerfile
-iosApp/       Xcode project
+
+Example Cloud SQL JDBC URL:
+
+```text
+jdbc:postgresql:///DATABASE_NAME?cloudSqlInstance=PROJECT_ID:REGION:INSTANCE_NAME&socketFactory=com.google.cloud.sql.postgres.SocketFactory
 ```
 
-## How to run
+## Run locally
 
-> Derived from the project configuration; **not executed** while preparing this documentation. JDK 17+ required.
+Requirements: JDK 17+ and a reachable PostgreSQL database.
 
 ```bash
-git clone https://github.com/TarasovVP/cloud-native-kotlin-backend.git
-cd cloud-native-kotlin-backend
+export JDBC_URL='jdbc:postgresql://localhost:5432/demo_objects'
+export DB_USER_NAME='postgres'
+export DB_USER_PASSWORD='change-me'
 
-# Server (needs a reachable PostgreSQL database; set the DB environment variables first)
 ./gradlew :server:run
-./gradlew :server:fatJar            # build the deployable jar
-
-# Clients (point Constants.kt at your server)
-./gradlew :composeApp:installDebug  # Android
-./gradlew :composeApp:run           # Desktop
-./gradlew :composeWebApp:jsBrowserDevelopmentRun   # Web
 ```
 
-## What this branch demonstrates
+The API is then available at `http://localhost:8080`.
 
-- A Kotlin backend sharing models with multiplatform clients.
-- Server-side SQLDelight with a PostgreSQL dialect.
-- Containerisation and cloud deployment of a Ktor service.
-- Client-side offline cache on top of a remote API.
+## Build and run the container
 
-## Related articles
+Build the fat JAR first, then build Docker from the repository root because the Dockerfile copies the server artifact from `server/build`.
 
-- [KMP: Server Implementation](https://medium.com/@vptarasov/kmp-server-implementation-49a0a4389b34) — documents the original implementation.
-- [Navigation in a Web Application with Kotlin Multiplatform](https://medium.com/@vptarasov/navigation-in-a-web-application-with-kotlin-multiplatform-2ac625b0ea04) — web navigation in the `composeWebApp` module.
-- [Deploying a KMP Server on Google Cloud: Step-by-Step Guide](https://medium.com/@vptarasov/deploying-a-kmp-server-on-google-cloud-step-by-step-guide-f32ade8c4be3) — Cloud SQL, Docker and Cloud Run deployment of the `server` module.
+```bash
+./gradlew :server:fatJar
+docker build -f server/Dockerfile -t cloud-native-kotlin-backend .
 
-## Other implementations
+docker run --rm -p 8080:8080 \
+  -e JDBC_URL='jdbc:postgresql://host.docker.internal:5432/demo_objects' \
+  -e DB_USER_NAME='postgres' \
+  -e DB_USER_PASSWORD='change-me' \
+  cloud-native-kotlin-backend
+```
 
-- [Repository overview](https://github.com/TarasovVP/Android-Architecure-Templates/blob/master/README.md) · [All branches](https://github.com/TarasovVP/Android-Architecure-Templates/blob/master/README.md#all-branches)
-- Previous: [KMP](https://github.com/TarasovVP/Android-Architecure-Templates/tree/kmp_implementation)
-- Next: [Multi-module KMP](https://github.com/TarasovVP/Android-Architecure-Templates/tree/kmp_with_multimodules_implementation)
+## Google Cloud deployment
+
+The deployed infrastructure consists of:
+
+- **Cloud Run** — runs the stateless Ktor container and provides the public HTTPS endpoint;
+- **Cloud SQL for PostgreSQL** — stores application data;
+- **Cloud SQL Socket Factory** — lets the JVM application connect to the managed database;
+- **Artifact Registry / container image** — stores the deployable server image;
+- **Cloud Build** — builds and deploys new revisions when configured for the project.
+
+For production, the Cloud Run service needs access to the Cloud SQL instance and the database credentials should be supplied through Secret Manager or protected environment configuration.
+
+## Current scope and limitations
+
+This is a demonstration backend rather than a production-ready public API. The current implementation has no authentication or authorization, allows CORS from any host, and uses broad exception handling in its routes. Production hardening would include authentication, request validation, structured error responses, database migrations, health checks, automated tests, restricted CORS and secret management.
+
+## Project origin
+
+The backend was originally developed in 2024 in the `kmp_with_server_implementation` branch of [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecure-Templates). It was extracted into this standalone repository in 2026 so the backend and Google Cloud implementation can be presented independently while retaining the original development history.
+
+Related articles:
+
+- [KMP: Server Implementation](https://medium.com/@vptarasov/kmp-server-implementation-49a0a4389b34)
+- [Deploying a KMP Server on Google Cloud: Step-by-Step Guide](https://medium.com/@vptarasov/deploying-a-kmp-server-on-google-cloud-step-by-step-guide-f32ade8c4be3)
