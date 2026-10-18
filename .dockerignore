@@ -1,0 +1,10 @@
+.git
+.github
+.gradle
+.idea
+.kotlin
+core/build
+server/build/*
+!server/build/libs/
+server/build/libs/*
+!server/build/libs/cloud-native-kotlin-backend.jar

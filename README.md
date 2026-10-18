@@ -1,61 +1,85 @@
 # Cloud-Native Kotlin Backend
 
-REST backend written in Kotlin with Ktor and PostgreSQL. The server is packaged as a Docker container and designed to run on Google Cloud Run with a Cloud SQL for PostgreSQL database.
+[![CI](https://github.com/TarasovVP/cloud-native-kotlin-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/TarasovVP/cloud-native-kotlin-backend/actions/workflows/ci.yml)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.20-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Ktor](https://img.shields.io/badge/Ktor-2.3.12-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
+[![Google Cloud Run](https://img.shields.io/badge/Google_Cloud-Run-4285F4?logo=googlecloud&logoColor=white)](https://cloud.google.com/run)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-The project demonstrates backend development, layered server architecture, relational data persistence, dependency injection, containerization and deployment on Google Cloud.
+A containerized REST backend built with Kotlin, Ktor, and PostgreSQL. The service is designed for Google Cloud Run, connects to Cloud SQL through the Cloud SQL Socket Factory, and preserves its original 2024 development history.
 
-## Backend architecture
+## What the project demonstrates
+
+- a layered Kotlin backend with clear HTTP, service, storage, and database boundaries;
+- RESTful CRUD operations with JSON serialization;
+- type-safe PostgreSQL queries and schema management with SQLDelight;
+- transaction-safe batch upserts;
+- dependency injection with Koin;
+- pooled JDBC connections with HikariCP;
+- environment-based local and cloud configuration;
+- a non-root Docker runtime suitable for Cloud Run;
+- route and service tests that do not require a live database;
+- continuous integration with GitHub Actions.
+
+## Architecture
 
 ```text
-KMP / web / HTTP clients
-          │
-          │ JSON over HTTP
-          ▼
+HTTP clients
+    │ JSON over HTTP
+    ▼
 Google Cloud Run
-┌─────────────────────────────────────────┐
-│ Ktor + Netty                            │
-│                                         │
-│ Routes                                  │
-│   └── DemoObjectService                 │
-│         └── SQLDelight queries          │
-│               └── HikariCP              │
-└───────────────────┬─────────────────────┘
-                    │ Cloud SQL Socket Factory / JDBC
-                    ▼
-          Cloud SQL for PostgreSQL
+┌──────────────────────────────────────────────┐
+│ Ktor + Netty                                 │
+│                                              │
+│ Routes                                       │
+│   └── DemoObjectService                      │
+│         └── DemoObjectStore                  │
+│               └── SQLDelight queries         │
+│                     └── HikariCP              │
+└──────────────────────┬───────────────────────┘
+                       │ JDBC / Cloud SQL Socket Factory
+                       ▼
+             Cloud SQL for PostgreSQL
 ```
 
 The request flow is:
 
-1. Ktor routes receive and deserialize HTTP requests.
-2. Response mappers convert JSON DTOs into domain models and back.
-3. `DemoObjectService` contains the application operations.
-4. SQLDelight generates type-safe PostgreSQL queries.
-5. HikariCP manages the JDBC connection pool.
-6. Koin creates and connects the server components.
+1. Ktor routes deserialize and validate incoming JSON.
+2. Response mappers translate between API DTOs and domain models.
+3. `DemoObjectService` enforces application-level requirements.
+4. `DemoObjectStore` separates business logic from persistence.
+5. The SQLDelight implementation executes type-safe PostgreSQL queries.
+6. HikariCP manages the JDBC connection pool.
 
-The database schema is created during application startup if it does not already exist.
+The database table is created during application startup when it does not already exist.
 
-## Backend module
+## Project structure
 
 ```text
-server/
-├── Dockerfile
-├── build.gradle.kts
-└── src/main/
-    ├── kotlin/com/vnteam/architecturetemplates/
-    │   ├── Application.kt                 # Netty server and Ktor plugins
-    │   ├── Constants.kt                   # default server/database configuration
-    │   ├── http/Routes.kt                 # REST endpoints
-    │   ├── demo_object_service/            # service interface and implementation
-    │   ├── db/DatabaseDriverFactory.kt     # HikariCP and JDBC configuration
-    │   ├── di/SeverModule.kt               # Koin dependency graph
-    │   └── mapperimpls/                    # DTO/domain mapping
-    ├── sqldelight/.../ServerDatabase.sq   # PostgreSQL schema and queries
-    └── resources/logback.xml              # server logging
+.
+├── core/
+│   └── src/main/kotlin/com/tarasovvp/cloudnativebackend/
+│       └── domain/                  # Domain models, API DTOs, mapper contracts
+├── server/
+│   ├── Dockerfile
+│   └── src/
+│       ├── main/
+│       │   ├── kotlin/com/tarasovvp/cloudnativebackend/
+│       │   │   ├── Application.kt  # Netty entry point and Ktor plugins
+│       │   │   ├── db/             # HikariCP / JDBC configuration
+│       │   │   ├── di/             # Koin dependency graph
+│       │   │   ├── http/           # REST routes
+│       │   │   ├── mapper/         # DTO and database mapping
+│       │   │   ├── service/        # Application operations
+│       │   │   └── storage/        # Persistence boundary and SQLDelight store
+│       │   ├── resources/          # Logback configuration
+│       │   └── sqldelight/         # PostgreSQL schema and queries
+│       └── test/                    # Route and service tests
+├── .github/workflows/ci.yml         # Test, JAR, and Docker verification
+└── gradle/                          # Version catalog and Gradle wrapper
 ```
 
-The `core` module contains serializable DTOs and domain models shared by the server and its Kotlin Multiplatform clients. The remaining application modules are API consumers and examples; they are not part of the deployed backend process.
+Only the `server` module is deployed. The `core` module provides the models and contracts it uses.
 
 ## REST API
 
@@ -66,9 +90,9 @@ The `core` module contains serializable DTOs and domain models shared by the ser
 | `GET` | `/demoObjects/{id}` | Return one object | `200 OK`, or `404 Not Found` |
 | `DELETE` | `/demoObjects/{id}` | Delete one object | `200 OK` |
 
-`POST /demoObjects` performs an upsert: a row with the same `demoObjectId` is updated instead of duplicated.
+`POST /demoObjects` performs an upsert. A row with the same `demoObjectId` is updated instead of duplicated, and the complete batch is written in one transaction. Blank or missing IDs are rejected with `400 Bad Request`.
 
-Example request body:
+Example request:
 
 ```json
 [
@@ -91,7 +115,7 @@ Example request body:
 
 | Area | Technology |
 |---|---|
-| Language | Kotlin 2.0.20, JVM 17 |
+| Language and runtime | Kotlin 2.0.20, JVM 17 |
 | HTTP server | Ktor 2.3.12 with Netty |
 | Serialization | kotlinx.serialization |
 | Dependency injection | Koin 4.0 |
@@ -101,10 +125,11 @@ Example request body:
 | Cloud database connection | Google Cloud SQL PostgreSQL Socket Factory |
 | Packaging | Gradle fat JAR and Docker |
 | Runtime | Google Cloud Run |
+| CI | GitHub Actions |
 
 ## Configuration
 
-The backend reads its runtime settings from environment variables:
+The service reads runtime settings from environment variables:
 
 | Variable | Required | Description |
 |---|---|---|
@@ -114,15 +139,15 @@ The backend reads its runtime settings from environment variables:
 | `DB_USER_NAME` | Yes | PostgreSQL user |
 | `DB_USER_PASSWORD` | Yes | PostgreSQL password |
 
-Do not commit real credentials. Configure production values as Cloud Run environment variables or secrets.
+Do not commit real credentials. Supply production values through Secret Manager or protected Cloud Run environment configuration.
 
-Example local JDBC URL:
+Local JDBC URL example:
 
 ```text
 jdbc:postgresql://localhost:5432/demo_objects
 ```
 
-Example Cloud SQL JDBC URL:
+Cloud SQL JDBC URL example:
 
 ```text
 jdbc:postgresql:///DATABASE_NAME?cloudSqlInstance=PROJECT_ID:REGION:INSTANCE_NAME&socketFactory=com.google.cloud.sql.postgres.SocketFactory
@@ -140,11 +165,28 @@ export DB_USER_PASSWORD='change-me'
 ./gradlew :server:run
 ```
 
-The API is then available at `http://localhost:8080`.
+The API is available at `http://localhost:8080`.
 
-## Build and run the container
+## Tests and build
 
-Build the fat JAR first, then build Docker from the repository root because the Dockerfile copies the server artifact from `server/build`.
+Run the route and service tests:
+
+```bash
+./gradlew :server:test
+```
+
+Build the executable JAR:
+
+```bash
+./gradlew :server:fatJar
+java -jar server/build/libs/cloud-native-kotlin-backend.jar
+```
+
+The tests use an in-memory implementation of the storage boundary, so PostgreSQL credentials are not needed for the test task.
+
+## Docker
+
+Build the fat JAR first, then build from the repository root:
 
 ```bash
 ./gradlew :server:fatJar
@@ -157,25 +199,27 @@ docker run --rm -p 8080:8080 \
   cloud-native-kotlin-backend
 ```
 
+The image uses a Java 17 JRE and runs under an unprivileged user.
+
 ## Google Cloud deployment
 
-The deployed infrastructure consists of:
+The intended production infrastructure consists of:
 
-- **Cloud Run** — runs the stateless Ktor container and provides the public HTTPS endpoint;
-- **Cloud SQL for PostgreSQL** — stores application data;
-- **Cloud SQL Socket Factory** — lets the JVM application connect to the managed database;
-- **Artifact Registry / container image** — stores the deployable server image;
-- **Cloud Build** — builds and deploys new revisions when configured for the project.
+- **Cloud Run** for the stateless Ktor container and public HTTPS endpoint;
+- **Cloud SQL for PostgreSQL** for application data;
+- **Cloud SQL Socket Factory** for the managed database connection;
+- **Artifact Registry** for the container image;
+- protected environment variables or **Secret Manager** for database credentials.
 
-For production, the Cloud Run service needs access to the Cloud SQL instance and the database credentials should be supplied through Secret Manager or protected environment configuration.
+The repository's GitHub Actions workflow provides continuous integration: it runs tests, builds the executable JAR, and verifies the Docker image on every push to `main` and every pull request. Production deployment remains an explicit Google Cloud operation because project-specific credentials and resource names are not stored in the repository.
 
-## Current scope and limitations
+## Current scope
 
-This is a demonstration backend rather than a production-ready public API. The current implementation has no authentication or authorization, allows CORS from any host, and uses broad exception handling in its routes. Production hardening would include authentication, request validation, structured error responses, database migrations, health checks, automated tests, restricted CORS and secret management.
+This repository is a focused demonstration backend, not a hardened public API. Before exposing it to untrusted clients, add authentication and authorization, restrict CORS, introduce versioned database migrations, add request limits and pagination, and expand integration and security testing.
 
 ## Project origin
 
-The backend was originally developed in 2024 in the `kmp_with_server_implementation` branch of [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecure-Templates). It was extracted into this standalone repository in 2026 so the backend and Google Cloud implementation can be presented independently while retaining the original development history.
+The backend was originally developed between May and October 2024 in the [`kmp_with_server_implementation`](https://github.com/TarasovVP/Android-Architecure-Templates/tree/kmp_with_server_implementation) branch of [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecure-Templates). It was extracted into this standalone repository in 2026 while retaining the original Git history.
 
 Related articles:
 
@@ -184,4 +228,4 @@ Related articles:
 
 ## License
 
-Copyright 2023 Volodymyr Tarasov. Licensed under the [Apache License 2.0](LICENSE).
+Copyright 2024 Volodymyr Tarasov. Licensed under the [Apache License 2.0](LICENSE).

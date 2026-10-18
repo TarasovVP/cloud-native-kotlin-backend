@@ -1,9 +1,14 @@
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
-COPY server/build/libs/ktor-server-1.0.0.jar /app/ktor-server.jar
+RUN useradd --system --uid 10001 appuser
 
+COPY --chown=appuser:appuser server/build/libs/cloud-native-kotlin-backend.jar app.jar
+
+ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app/ktor-server.jar"]
+USER appuser
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
