@@ -1,6 +1,8 @@
-# KMP with a Ktor Server
+# Cloud-Native Kotlin Backend
 
-Extends the [KMP branch](https://github.com/TarasovVP/Android-Architecure-Templates/tree/kmp_implementation) with the project's **own backend**: a Ktor server with a PostgreSQL database, written in Kotlin and sharing its models with the clients. The clients stop calling the GitHub API and talk to this server instead, with a local SQLDelight database as a cache.
+A containerized REST backend built with Kotlin, Ktor and PostgreSQL, deployed to Google Cloud Run with Cloud SQL. The repository also contains Kotlin Multiplatform clients that share models with the server and use a local SQLDelight database as a cache.
+
+The project was originally developed in 2024 as the `kmp_with_server_implementation` branch of [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecure-Templates) and was extracted into this standalone repository in 2026.
 
 ## Overview
 
@@ -79,8 +81,8 @@ iosApp/       Xcode project
 > Derived from the project configuration; **not executed** while preparing this documentation. JDK 17+ required.
 
 ```bash
-git clone --branch kmp_with_server_implementation https://github.com/TarasovVP/Android-Architecure-Templates.git
-cd Android-Architecure-Templates
+git clone https://github.com/TarasovVP/cloud-native-kotlin-backend.git
+cd cloud-native-kotlin-backend
 
 # Server (needs a reachable PostgreSQL database; set the DB environment variables first)
 ./gradlew :server:run
@@ -101,7 +103,7 @@ cd Android-Architecure-Templates
 
 ## Related articles
 
-- [KMP: Server Implementation](https://medium.com/@vptarasov/kmp-server-implementation-49a0a4389b34) — documents this branch.
+- [KMP: Server Implementation](https://medium.com/@vptarasov/kmp-server-implementation-49a0a4389b34) — documents the original implementation.
 - [Navigation in a Web Application with Kotlin Multiplatform](https://medium.com/@vptarasov/navigation-in-a-web-application-with-kotlin-multiplatform-2ac625b0ea04) — web navigation in the `composeWebApp` module.
 - [Deploying a KMP Server on Google Cloud: Step-by-Step Guide](https://medium.com/@vptarasov/deploying-a-kmp-server-on-google-cloud-step-by-step-guide-f32ade8c4be3) — Cloud SQL, Docker and Cloud Run deployment of the `server` module.
 
