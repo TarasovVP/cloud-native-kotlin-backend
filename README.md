@@ -181,3 +181,7 @@ Related articles:
 
 - [KMP: Server Implementation](https://medium.com/@vptarasov/kmp-server-implementation-49a0a4389b34)
 - [Deploying a KMP Server on Google Cloud: Step-by-Step Guide](https://medium.com/@vptarasov/deploying-a-kmp-server-on-google-cloud-step-by-step-guide-f32ade8c4be3)
+
+## License
+
+Copyright 2023 Volodymyr Tarasov. Licensed under the [Apache License 2.0](LICENSE).
