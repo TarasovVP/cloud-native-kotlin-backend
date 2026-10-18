@@ -219,7 +219,7 @@ This repository is a focused demonstration backend, not a hardened public API. B
 
 ## Project origin
 
-This backend was originally built in 2024 as the [server component](https://github.com/TarasovVP/Android-Architecure-Templates/tree/kmp_with_server_implementation) of the [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecure-Templates) project. It accompanies a two-part article series covering the Ktor implementation and its deployment to Google Cloud. In 2026, the backend was extracted into this standalone repository to make it easier to explore, build, and extend independently while preserving its original Git history.
+This backend was originally built in 2024 as the [server component](https://github.com/TarasovVP/Android-Architecture-Templates/tree/kmp_with_server_implementation) of the [Android Architecture Templates](https://github.com/TarasovVP/Android-Architecture-Templates) project. It accompanies a two-part article series covering the Ktor implementation and its deployment to Google Cloud. In 2026, the backend was extracted into this standalone repository to make it easier to explore, build, and extend independently while preserving its original Git history.
 
 Article series:
 
